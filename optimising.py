@@ -25,12 +25,14 @@ def get_snap(curr_color): # just pass current colour
         return None # must return None 
 
 # cx is the x position of the centre of the blob
-def align_robot(cx, curr_color): 
+def align_robot(cx, curr_color, couont=0): 
     error = cx - CENTER_X # difference between blob centroid and image centroid
     print('error', error)
 
     if abs(error) < TOLERANCE: 
         move_forward(0.7) 
+    elif count > 5: # change this value if you think robot is going a little crazy
+        move_forward(0.2)
     else: # if not within tolerance, turn left or right
         if error > 0:
             servo.set_speed(-0.1, 0.1) # left wheel goes back and right wheel goes front to turn left
@@ -43,7 +45,7 @@ def align_robot(cx, curr_color):
         for i in range(3): # can print stuff here or increase number of iterations for debugging
             largest_blob = get_snap(curr_color)
             if largest_blob: 
-                align_robot(largest_blob.cx(), curr_color) 
+                align_robot(largest_blob.cx(), curr_color, count=count+1) 
                 break
             move_forward(0.3) # if you don't see the blob anymore, go forward and take a snap again
             # no need to do time.sleep again here because move_forward is coded with the duration included
@@ -51,7 +53,7 @@ def align_robot(cx, curr_color):
 
 def move_forward(duration=0.7):
     print("MOVE FORWARD")
-    servo.set_differential_drive(0.1, SPEED_BIAS)
+    servo.set_differential_drive(0.1, SPEED_BIAS) # can change this to set_speed if bias is always 0
     time.sleep(duration)
 
 # speeds are always set to 0.1, time that it is moving is different
