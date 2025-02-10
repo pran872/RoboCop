@@ -25,7 +25,7 @@ def get_snap(curr_color): # just pass current colour
         return None # must return None 
 
 # cx is the x position of the centre of the blob
-def align_robot(cx, curr_color, couont=0): 
+def align_robot(cx, curr_color, count=0): 
     error = cx - CENTER_X # difference between blob centroid and image centroid
     print('error', error)
 
