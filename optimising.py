@@ -12,7 +12,6 @@ import time
 # ensure indexing is correct 
 def get_snap(curr_color): # just pass current colour
     all_blobs, img = camera.get_blobs() # make sure there are 2 outputs 
-    #if all_blobs:
     blobs_colors = camera.get_blob_colours(all_blobs) # get colours for each blob
     blobs = []
     for i in range(len(blobs_colors)): # iterate through blob colours and adds blob to blob list if colour matches colour of interest
@@ -21,8 +20,6 @@ def get_snap(curr_color): # just pass current colour
 
     largest_blob = camera.get_biggest_blob(blobs) # finds the biggest of those blobs
     return largest_blob
-    #else:
-        #return None # it will return none anyway, no need for this
 
 # cx is the x position of the centre of the blob
 def align_robot(cx, curr_color, count=0): 
