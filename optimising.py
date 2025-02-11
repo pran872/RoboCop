@@ -27,7 +27,7 @@ def align_robot(cx, curr_color, count=0):
     print('error', error)
 
     if abs(error) < TOLERANCE: 
-        move_forward(0.7) 
+        move_forward(0.5) 
     elif count > 5: # change this value if you think robot is going a little crazy
         move_forward(0.2)
     else: # if not within tolerance, turn left or right
