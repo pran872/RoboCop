@@ -2,10 +2,10 @@ import time, sensor
 from camera import *
 from servos import *
 from machine import LED
-def get_snap(curr_color):
-    blobs = [b for b in camera.get_blobs()[0] if b.code() == 2**curr_color]
+def get_snap(col):
+    blobs = [b for b in camera.get_blobs()[0] if b.code() == 2**col]
     return camera.get_biggest_blob(blobs)
-def align_robot(cx, curr_color, count = 0):
+def align_robot(cx, col, count = 0):
     error = cx - (sensor.width()//2)
     if abs(error) < 50:
         mf(0.5)
@@ -19,9 +19,9 @@ def align_robot(cx, curr_color, count = 0):
         time.sleep(0.05)
         servo.set_speed(0, 0)
         for i in range(3):
-            lb = get_snap(curr_color)
+            lb = get_snap(col)
             if lb:
-                align_robot(lb.cx(), curr_color, count = count + 1)
+                align_robot(lb.cx(), col, count = count + 1)
                 break
             mf(0.3)
             servo.set_speed(0, 0)
@@ -45,16 +45,16 @@ if __name__ == "__main__":
     ]
     camera = Cam(thresholds, gain = 10)
     found = False
-    search, curr_color = 0, 0
-    while curr_color < len(thresholds):
-        lb = get_snap(curr_color)
+    search, col = 0, 0
+    while col < len(thresholds):
+        lb = get_snap(col)
         if lb:
             found = True
             search = 0
-            align_robot(lb.cx(), curr_color)
+            align_robot(lb.cx(), col)
         elif found:
             found = False
-            curr_color += 1
+            col += 1
         else:
             while not lb:
                 search += 1
@@ -63,5 +63,5 @@ if __name__ == "__main__":
                 if search > 30:
                     mf(search//30*0.05)
                 servo.set_speed(0, 0)
-                lb = get_snap(curr_color)
+                lb = get_snap(col)
     servo.set_speed(0, 0)
