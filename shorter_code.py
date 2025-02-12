@@ -8,9 +8,9 @@ def get_snap(curr_color):
 def align_robot(cx, curr_color, count = 0):
     error = cx - (sensor.width()//2)
     if abs(error) < 50:
-        move_forward(0.5)
+        mf(0.5)
     elif count > 5:
-        move_forward(0.2)
+        mf(0.2)
     else:
         if error > 0:
             servo.set_speed(-0.1, 0.1)
@@ -23,9 +23,9 @@ def align_robot(cx, curr_color, count = 0):
             if lb:
                 align_robot(lb.cx(), curr_color, count = count + 1)
                 break
-            move_forward(0.3)
+            mf(0.3)
             servo.set_speed(0, 0)
-def move_forward(dur):
+def mf(dur):
     servo.set_differential_drive(0.1, 0)
     time.sleep(dur)
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
                 servo.set_speed(-0.1, 0.1)
                 time.sleep(0.1)
                 if search > 30:
-                    move_forward(search//30*0.05)
+                    mf(search//30*0.05)
                 servo.set_speed(0, 0)
                 lb = get_snap(curr_color)
     servo.set_speed(0, 0)
