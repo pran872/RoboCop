@@ -7,9 +7,10 @@ class Cam(object):
     thresholds for blob detection.
     """
 
-    def __init__(self, thresholds, gain = 10):
+    def __init__(self, thresholds, gain = 0):
         """
         Initialise the Cam object by setting up camera parameters and
+
         configuring color thresholds.
         """
         # Configure camera settings
@@ -25,9 +26,9 @@ class Cam(object):
         # Initialise sensor properties
         self.w_centre = sensor.width()/2
         self.h_centre = sensor.height()/2
-        self.h_fov = 70.8
-        self.v_fov = 55.6
-        self.camera_elevation_angle = -11
+        self.h_fov = 31.5
+        self.v_fov = 21
+        self.camera_elevation_angle = -11.5  # can measure and adjust this value
         self.clock = time.clock()
 
         # Define color tracking thresholds for Red, Green, Blue, and Yellow colors
@@ -38,16 +39,15 @@ class Cam(object):
     def get_blobs(self, angle = 0) -> tuple:
         """
         Capture an image and detect color blobs based on predefined thresholds.
-
+        Args:
+            angle (float): pan angle for image rotation correction. Defaults to 0.
         Returns:
             blobs (list): List of detected blobs.
             img (image): Captured image used to find blobs.
         """
         img = sensor.snapshot()
         img.rotation_corr(z_rotation=angle)
-        # blobs = img.find_blobs(self.thresholds,pixels_threshold=60,area_threshold=60)
-
-        blobs = img.find_blobs(self.thresholds,pixels_threshold=150,area_threshold=150)
+        blobs = img.find_blobs(self.thresholds,pixels_threshold=60,area_threshold=60)
 
         return blobs, img
 
@@ -56,7 +56,8 @@ class Cam(object):
         """
         Capture an image and detect colour blobs based on predefined thresholds.
         Region of interest is set to the bottom 2/3 of the image.
-
+        Args:
+            angle (float): pan angle for image rotation correction. Defaults to 0.
         Returns:
             blobs (list): List of detected blobs.
             img (image): Captured image used to find blobs.
@@ -147,40 +148,15 @@ if __name__ == "__main__":
     sensor.set_auto_whitebal(False)  # must be turned off for colour tracking
 
     # Change gain here to work with the lighting conditions you have
-    sensor.set_auto_gain(False, gain_db = 10)  # must be turned off for color tracking
-    #
+    sensor.set_auto_gain(False, gain_db = 10)  # can change the gain depending to the brightnes;
+    # make sure you pass the gain you tested it when initialising the Cam object in your script
+
 
     # Color Tracking Thresholds (L Min, L Max, A Min, A Max, B Min, B Max)
     # The below thresholds track in general red/green things. You may wish to tune them...
     thresholds = [
-
-    (34, 46, -28, -15, 2, 24), # green
-    # (34, 46, -28, -15, 2, 24) # green
-    # (39, 50, -4, 13, -61, -38) #blue
-    # (75, 89, -23, 4, 20, 68) # new yellow
-    # (43, 49, 40, 59, 13, 41) # red
-     # (34, 46,-28, -15, 2, 24), #green
-     # (38, 57, 39, 66, 5, 42) #red new
-    # (52, 61, 23, 39, 19, 50) # orange
-    # (18, 90, 13, 30, -20, 8) # old purple
-    # (28, 36, 8, 25, -16, 2) # purple
-    # (60, 77, -40, -18, 4, 53) # light green
-
-    # tuesday phd area new thresholds
-    # (56, 62, -20, 0, -27, 0), #green
-    # (70, 74, -8, 3, -44, -30), #blue
-    # (65, 72, -10, 4, 8, 37), # yellow
-    # (76, 81, 26, 40, -31, -13), #red from blue
-    # (69, 100, 20, 41, -26, -9) # red from yellow
-    # (36, 54, 9, 26, -30, -10), #old good purple
-    # (33, 60, 10, 29, -39, 5) # purple
-    # (79, 87, 18, 30, -24, -9), #orange
-    # (56, 64, -21, -1, -9, 15) #lightgreen
-
-    (24, 32, 11, 31, -20, 0),
-    (38, 50, -6, 10, -51, -23),
-    (57, 72, -49, -18, 14, 61),
-
+        # (43, 56, 37, 54, 6, 24), # Orange
+        # (17, 26, 22, 37, -41, -10) # purple
     ]
 
     angle = 0 # Set pan angle for rotation correction
@@ -197,16 +173,16 @@ if __name__ == "__main__":
             img.draw_rectangle(blob.rect())
 
     # Try uncommenting these lines to see what happens
-            # if blob.elongation() > 0.5:
-            #    img.draw_edges(blob.min_corners(), color=(255, 0, 0))
-            #    img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
-            #    img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
+    #        if blob.elongation() > 0.5:
+    #            img.draw_edges(blob.min_corners(), color=(255, 0, 0))
+    #            img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
+    #            img.draw_line(blob.minor_axis_line(), color=(0, 0, 255))
     #
 
     # Try uncommenting these lines to see what happens
-            # img.draw_cross(blob.cx(), blob.cy())
-            # # Note - the blob rotation is unique to 0-180 only.
-            # img.draw_keypoints(
-            #    [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
-            # )
+    #        img.draw_cross(blob.cx(), blob.cy())
+    #        # Note - the blob rotation is unique to 0-180 only.
+    #        img.draw_keypoints(
+    #            [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
+    #        )
     #

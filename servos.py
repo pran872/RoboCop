@@ -193,30 +193,30 @@ if __name__ == "__main__":
     servo.set_speed(0,0)
     time.sleep_ms(1000)
 
-    servo.set_speed(0.1, -0.1)
+    servo.set_speed(-0.1, 0.1)
     time.sleep(10)
     servo.set_speed(0, 0)
     time.sleep(0.5)
 
     # print('\n-0.1, -0.1')
-    # servo.set_speed(-0.1, -0.1)
-    # time.sleep_ms(1000)
+    # servo.set_speed(0.1, 0.3)
+    # time.sleep_ms(10000)
 
 
 
     # print('\ndiff')
     # print('\ndiff')
     # print('\ndiff')
-    # servo.set_differential_drive(0.025, 1) # tyrn left
+    # servo.set_differential_drive(0.1, 0.0)
     # time.sleep_ms(3000)
 
     # # print('\n0,0')
     # servo.set_speed(0,0)
     # time.sleep_ms(5000)
 
-    # print('\n0,0')
-    # servo.set_speed(0,0)
-    # time.sleep_ms(5000)
+    print('\n0,0')
+    servo.set_speed(0,0)
+    time.sleep_ms(5000)
 
 
     # print('\n0.2,0.2')

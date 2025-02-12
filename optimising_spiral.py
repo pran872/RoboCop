@@ -10,22 +10,17 @@ import time
 
 def get_snap(curr_color):
     all_blobs, img = camera.get_blobs()
-    # if all_blobs:
-    blobs_colors = camera.get_blob_colours(all_blobs)
-    blobs = []
-    for i in range(len(blobs_colors)):
-        if blobs_colors[i] == 2**(curr_color):
-            blobs.append(all_blobs[i])
+    if all_blobs:
+        blobs_colors = camera.get_blob_colours(all_blobs)
+        blobs = []
+        for i in range(len(blobs_colors)):
+            if blobs_colors[i] == 2**(curr_color):
+                blobs.append(all_blobs[i])
 
-    largest_blob = camera.get_biggest_blob(blobs)
-
-    # print(all_blobs)
-    # print(blobs_colors)
-    # print(largest_blob)
-    # print()
-    return largest_blob
-    # else:
-    #     return None
+        largest_blob = camera.get_biggest_blob(blobs)
+        return largest_blob
+    else:
+        return None
 
 def align_robot(cx, curr_color, count=0):
     error = cx - CENTER_X
@@ -76,14 +71,11 @@ if __name__ == "__main__":
         # (28, 36, 8, 25, -16, 2), # purple
         # (60, 77, -40, -18, 4, 53), # light green
 
-        # # tuesday phd area
+        # tuesday phd area
         (56, 62, -20, 0, -27, 0), #green
         (70, 74, -8, 3, -44, -30), #blue
-        (65, 72, -10, 4, 8, 37), # yellow
-        # (76, 81, 26, 40, -31, -13), #red from blue
-        (69, 100, 20, 41, -26, -9), # red from yellow
-        # (36, 54, 9, 26, -30, -10), #old good purple facing
-        (33, 60, 10, 29, -39, 5), # purple
+        (76, 81, 26, 40, -31, -13), #red
+        (36, 54, 9, 26, -30, -10), #purple facing
         (79, 87, 18, 30, -24, -9), #orange
         (56, 64, -21, -1, -9, 15) #lightgreen
 
@@ -115,7 +107,7 @@ if __name__ == "__main__":
             while not largest_blob:
                 searching += 1
                 print(f"Searching for color: {curr_color}")
-                servo.set_speed(0.1, -0.1)  # Rotate RIGHT in place to search
+                servo.set_speed(-0.1, 0.1)  # Rotate LEFT in place to search
                 time.sleep(0.1)
                 if searching > 30:
                     move_forward(searching // 30 * 0.05)
