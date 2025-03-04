@@ -16,8 +16,8 @@ def send_script_to_openmv(script_path, ip, port):
         s.sendall(script.encode())
 
 # Usage
-openmv_ip = '192.168.4.16'  # Replace with your OpenMV camera's IP address
+openmv_ip = '192.168.4.1'  # Replace with your OpenMV camera's IP address
 openmv_port = 8081         # Replace with the port you've set for script execution
-script_path = '/Users/pranathipoojary/Imperial/ALBR/RoboCop/assignment_2_pt2_obstacle/servos.py'  # Path to the Python script you want to send
+script_path = '/Users/pranathipoojary/Imperial/ALBR/RoboCop/assignment_2_pt2_obstacle/exercise3.py'  # Path to the Python script you want to send
 
 send_script_to_openmv(script_path, openmv_ip, openmv_port)

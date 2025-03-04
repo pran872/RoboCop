@@ -265,10 +265,8 @@ class Robot(object):
             bias (float): Just an example of other arguments you can add to the function!
         """
         stop_cm += 5
-        print("STOP CM:", stop_cm-5, stop_cm)
-        # pix_to_cm = lambda x: 0.000105*x**2 + -0.104068*x + 25.931873  # curve 1
-        # pix_to_cm = lambda x: 0.000076*x**2 + -0.086957*x + 32.820661  # curve 2
-        pix_to_cm = lambda x: 0.000101*x**2 + -0.100282*x + 34.739524  # curve 3
+        found_mid = False
+        pix_to_cm = lambda x: 0.000101*x**2 + -0.100282*x + 34.739524 # curve obtained through manual points
 
         print("\nI am good to go. Starting now!")
 
@@ -279,11 +277,9 @@ class Robot(object):
             if obstacle_blob: # obstacle detected
                 print("\nOh oh there's an obstacle. I'm stopping but I'm looking at you")
                 self.drive(0,0)
-                real_distance = pix_to_cm((obstacle_blob.h()/2)+obstacle_blob.cy())  # for curve 3
+                real_distance = pix_to_cm((obstacle_blob.h()/2)+obstacle_blob.cy()) 
 
-
-                # print('new pix', obstacle_blob.h()-obstacle_blob.cy())  # for curve 1
-                print('new pix', (obstacle_blob.h()/2)+obstacle_blob.cy())  # for curve 3
+                print('new pix', (obstacle_blob.h()/2)+obstacle_blob.cy())
                 print('real distance', real_distance)
 
 
@@ -315,36 +311,22 @@ class Robot(object):
         self.servo.soft_reset()
         return
 
-    def track_and_move(self, target_blob, stop_angle, speed=0.1):
-
-        while True:
-            pan_angle, pid_error = self.track_blob(target_blob)
-            print("Obstacle angle:", pan_angle, "PID error:", pid_error)
-            if abs(pan_angle) > stop_angle:
-                break
-
-            turn = 1 if pan_angle < 0 else -1 # if pan angle is -ve turn is +ve
-            turn_bias = turn * (pan_angle * turn - stop_angle + pid_error) / 90
-            print("form", turn * (pan_angle * turn - stop_angle + pid_error))
-            print("Turn bias", turn_bias)
-            self.drive(speed, turn_bias)
-            time.sleep_ms(1000)
-
-        print("done")
-        self.drive(0, 0)
 
 
-
-    def stage4(self, speed=0.1, stop_cm=10, stop_angle=90) -> None:
+    def stage4(self, speed=0.1, stop_cm=10, stop_angle=20, sign_given=True) -> None:
         """
         Obstacle distance algorithm - FOLLOWS MID BLOB!
 
         Args:
             speed (float): Speed to set the servos to (-1~1)
-            bias (float): Just an example of other arguments you can add to the function!
+            stop_cm (float or int): The distance the robot should stop from the obstacle in cm (10-25cm)
+            stop_angle (int): The angle betweent the camera and the body of the robot after encountering
+                                an obstacle (camera points at the obstacle) in degrees (+-30)
+            sign_given (bool): If True, the stop_angle includes the sign else, the robot infers the direction
+                            to pan from the obstacle position
         """
-        # if stop_cm
         stop_cm += 5
+        found_mid = False
         pix_to_cm = lambda x: 0.000101*x**2 + -0.100282*x + 34.739524  # curve 3
 
         print("\nI am good to go. Starting now!")
@@ -354,22 +336,42 @@ class Robot(object):
             obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000)
 
             if obstacle_blob: # obstacle detected
-                print("\nOh oh there's an obstacle. I'm stopping but I'm looking at you")
                 self.drive(0,0)
-                real_distance = pix_to_cm((obstacle_blob.h()/2)+obstacle_blob.cy())  # for curve 3
+                real_distance = pix_to_cm((obstacle_blob.h()/2)+obstacle_blob.cy())
 
-                # print('new pix', obstacle_blob.h()-obstacle_blob.cy())  # for curve 1
-                # print('new pix', (obstacle_blob.h()/2)+obstacle_blob.cy())  # for curve 3
-                # print('real distance', real_distance)
+                print(f"\nOh oh there's an obstacle. I'm stopping at {stop_cm-5}. Real distance (cm): {real_distance-5}")
 
                 if real_distance < stop_cm or abs(real_distance - stop_cm) < 2:
-                    print('\nReached distance')
+                    print(f'\nI have reached the stop threshold. Adjusting pan angle from {self.servo.pan_pos} to {stop_angle}')
                     self.drive(0, 0)
 
-                    self.track_and_move(obstacle_blob, stop_angle, speed=0.1)
+                    pan_angle = self.track_blob(obstacle_blob, pan=False)
+                    if not sign_given:
+                        stop_angle = -1*stop_angle if pan_angle < 0 else stop_angle
+                    print(stop_angle)
+
+                    while True:
+                        if abs(pan_angle) > abs(stop_angle):
+                            print('\nPan angle threshold achieved. Breaking')
+                            break
+                        else:
+                            if stop_angle < 0: #-ve stop angle
+                                self.servo.set_speed(0.1,-0.1) # turns right
+                                time.sleep(0.04)
+                            else: #+ve stop angle
+                                self.servo.set_speed(-0.1,0.1) # turns left
+                                time.sleep(0.04)
+                            self.servo.set_speed(0, 0)
+                            time.sleep(0.1)
+
+                        pan_angle = self.track_blob(obstacle_blob, pan=True)
+
+                    print('\nFinal real distance (cm)', real_distance, 'Final pan angle', self.servo.pan_pos)
+                    print("I did it hooray!")
                     break
 
-            if mid_blob: # Found the middle blob - then move to it
+
+            if mid_blob: # Found the middle blob - now move to it
                 print("\nI found the mid blob! Yay")
                 found_mid = True
                 pixel_error = mid_blob.cx() - self.cam.w_centre
@@ -386,119 +388,8 @@ class Robot(object):
                     print("yoohoo, dont see anything")
 
         self.servo.set_speed(0,0)
-        # time.sleep(5)
-        # print("\n Okay, I will let you go")
-        # self.servo.soft_reset()
         return
 
-
-    def stage4_old(self, speed=0.1, stop_cm=10, angle_thresh=20) -> None:
-            """
-            Obstacle distance + orientation algorithm - write your own method!
-
-            Args:
-                speed (float): Speed to set the servos to (-1~1)
-                bias (float): Just an example of other arguments you can add to the function!
-            """
-            stop_cm += 3
-            pix_to_cm = lambda x: 0.000105*x**2 + -0.104068*x + 25.931873
-
-            # time.sleep(5)
-            print("\nI am good to go. Starting now!")
-
-            while True:
-                # detect blobs
-                mid_blob = self.get_snap(self.mid_line_id)
-
-                # detect obstacle
-                obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000)
-
-                if obstacle_blob: # obstacle detected
-                    print("\nOh oh there's an obstacle. I'm stopping but I'm looking at you")
-                    self.drive(0,0)
-                    # self.drive(speed, 0)
-                    while True:
-
-                        while not obstacle_blob:
-                            print('i lost it')
-                            obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000)
-
-                        real_distance = pix_to_cm(obstacle_blob.h()-obstacle_blob.cy())
-                        print('obstacle - cy', obstacle_blob.cy())
-                        print('obstacle - h', obstacle_blob.h())
-                        print('new pix', obstacle_blob.h()-obstacle_blob.cy())
-                        print('real distance:', real_distance)
-                        if real_distance > stop_cm:
-                            print('almost there - moving')
-                            # steering = round((mid_blob.cx() - self.cam.w_centre) / (self.cam.w_centre * 2), 2)
-                            # print('obs steering', steering)
-                            # self.drive(speed, steering)
-                            pixel_error = mid_blob.cx() - self.cam.w_centre
-                            steering = self.PID_steering.get_pid(pixel_error/sensor.width(), scaler=1.0)
-                            self.drive(speed, steering)
-                            time.sleep_ms(100)
-                            self.drive(0, 0) # Causes jerking but is more accurate!
-                        else:
-                            pan_angle, _ = self.track_blob(obstacle_blob, pan=False)
-                            while True:
-                                print("pan angle", pan_angle)
-                                if abs(pan_angle) > angle_thresh:
-                                    print("Done")
-                                    break
-                                else:
-                                    print('moving')
-                                    if pan_angle < 0:
-                                        self.servo.set_speed(0.1,-0.1)
-                                        time.sleep(0.15)
-                                    else:
-                                        self.servo.set_speed(-0.1,0.1)
-                                        time.sleep(0.04)
-                                    self.servo.set_speed(0, 0)
-
-                                pan_angle, _ = self.track_blob(obstacle_blob, pan=True)
-
-                            print('reached, bye bye')
-                            print('real distance:', real_distance)
-                            print('pan angle:', pan_angle)
-                            self.drive(0, 0)
-                            break
-                        obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000)
-
-                    # self.drive(0,0)
-
-                    # keep track of obstacle and if it's actually there then end
-                    # self.track_blob(obstacle_blob)
-                    break
-
-                elif mid_blob: # no obstacle but mid line
-                    print("\nI found the mid blob! Yay")
-                    # steering = round((mid_blob.cx() - self.cam.w_centre) / (self.cam.w_centre * 2), 2)
-                    # print('steering', steering, 'mid_blobcx', mid_blob.cx())
-                    # self.drive(speed, min(steering, 0.35))
-
-                    pixel_error = mid_blob.cx() - self.cam.w_centre
-                    steering = self.PID_steering.get_pid(pixel_error/sensor.width(), scaler=1.0)
-                    self.drive(speed, steering)
-                    time.sleep_ms(100)
-                    # self.align_robot(mid_blob.cx(), self.mid_line_id)
-
-                else: # no obstacle and no lane
-                    print("oh oh i don't see stuff")
-
-                    for i in range(5):
-                        mid_blob = self.get_snap(self.mid_line_id)
-                        if mid_blob:
-                            break
-                    else:
-                        print('still dont see stuff. bye bye')
-                        break
-                #     mid_blob = self.searching(mid_blob, self.mid_line_id)
-
-            self.servo.set_speed(0,0)
-            time.sleep(5)
-            print("\n Okay, I will let you go")
-            # self.servo.soft_reset()
-            return
 
     def stage5(self, speed: float, bias: float) -> None:
         """
@@ -547,7 +438,7 @@ class Robot(object):
             # Move pan servo to track block
             self.servo.set_angle(pan_angle)
 
-        return pan_angle, pid_error # Pranathi added this
+        return pan_angle
 
 
     def scan_for_blob(self, threshold_idx: int, step = 2, limit = 20) -> None:
