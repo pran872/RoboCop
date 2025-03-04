@@ -163,16 +163,26 @@ if __name__ == "__main__":
     # (56, 77, 14, 48, -15, 12), # red 4
     # (59, 65, 23, 39, -15, 12), # red 5
     # (65, 71, 23, 39, -15, 12), # red 6
-    (56, 68, 24, 41, -15, 12), # red 7
+    # (56, 68, 24, 41, -15, 12), # red 7
     # (37, 49, 12, 21, -34, -19), # purple
     # (44, 56, 15, 29, -32, -8), # purple 2
     # (57, 69, -17, -4, -26, -11) # light blue
     # (64, 80, -15, -4, -27, -6) # light blue 2
     # (73, 77, -8, 2, -30, -16), # light blue 3
     # (44, 63, -9, 10, -15, 12), # green paper obstacle
-     (7, 18, -11, 9, -15, 7) # black obstacle
+     # (7, 18, -11, 9, -15, 7) # black obstacle
 
 
+    # Pranathi's bedroom floor - gain 10 - lamp + phone
+    # (34, 43, 14, 38, 0, 32), # red 1
+    (39, 56, 16, 38, -6, 20), # red 2
+    # (47, 57, -23, -7, -20, -3), # light blue 1
+    # (40, 56, -14, 0, -26, -13), # light blue 2
+    (54, 71, -14, 1, -25, -15), # light blue 3
+    # (8, 23, -2, 18, -18, 1), # purple 1
+    (13, 28, 8, 25, -25, -7), # purple 2
+    # (9, 42, -11, 5, 13, 41) # obstacle yellow 1
+    (16, 47, -5, 12, 14, 37), # obstacle yellow 2
 
     # Rachael's thresholds in Skempton
     # (41, 46, 27, 42, 7, 35), # red
@@ -191,13 +201,21 @@ if __name__ == "__main__":
     while True:
         img = sensor.snapshot()
         img.rotation_corr(z_rotation=angle)
+        # print('sztart')
         for blob in img.find_blobs(thresholds, pixels_threshold=150, area_threshold=150):
             img.draw_rectangle(blob.rect())
+            if blob.code() == 1:
+                # print(blob)
+                print(blob.cx(), blob.cy(), blob.h())
+            # print(blob)
             # img.draw_cross(blob.cx(), blob.cy())
             # img.draw_keypoints(
             #    [(blob.cx(), blob.cy(), int(math.degrees(blob.rotation())))], size=20
             # )
             img.draw_string(blob.cx(), blob.cy(), str(int(blob.code())), scale=2)
+        blobs = img.find_blobs(thresholds, pixels_threshold=150, area_threshold=150)
+        furthest_blob = sorted(blobs, key=lambda b: b.cy())
+        # print('end')
         # break
 
     # # Try uncommenting these lines to see what happens
