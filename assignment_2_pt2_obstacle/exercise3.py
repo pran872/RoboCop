@@ -55,10 +55,10 @@ robot = Robot(thresholds, gain = 10, p_steer=1.1, d_steer=0.005, p=1.2, i=0, d=0
 # for stop in stops:
 #     robot.stage3(stop_cm=stop)
 #     time.sleep(10)
-# robot.stage3(stop_cm=10)
+robot.stage3(stop_cm=10)
 
 # robot.stage4(stop_cm=20, stop_angle=30)
-robot.stage4(speed=0.1, stop_cm=10, stop_angle=30, sign_given=False)
+# robot.stage4(speed=0.1, stop_cm=10, stop_angle=30, sign_given=False)
 
 
 # while True:
