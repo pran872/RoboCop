@@ -95,6 +95,24 @@ class Robot(object):
 
         self.servo.soft_reset()
 
+
+    def steer_robot(self, target_blob=None, pixel_error=None, speed=0.1):
+        if target_blob:
+            pixel_error = target_blob.cx() - self.cam.w_centre
+        steering = self.PID_steering.get_pid(pixel_error/sensor.width(), scaler=1.0)
+        self.drive(speed, steering)
+
+    def turn_body_to_head(self, target_blob, speed=0.1):
+        while True:
+            pan_angle = self.track_blob(target_blob)
+
+            print(pan_angle*-1/30)
+            self.drive(speed, pan_angle*-1/30)
+
+
+
+
+
     def stage1_robust(self, speed=0.1) -> None:
         """
         Line following algorithm. Uses all lanes. Can function without the middle lane.
@@ -132,8 +150,7 @@ class Robot(object):
                 if mid_blob:
                     print("Found the blob. Trying again")
                     pixel_error = mid_blob.cx() - self.cam.w_centre
-                    steering = self.PID_steering.get_pid(pixel_error/sensor.width(), scaler=1.0)
-                    self.drive(speed, steering)
+                    self.steer_robot(pixel_error=pixel_error, speed=0.1)
                     self.servo.set_angle(0)
                     continue
 
@@ -141,8 +158,7 @@ class Robot(object):
                     print("\n I did it. Hooray!")
                     break
 
-            steering = self.PID_steering.get_pid(pixel_error/sensor.width(), scaler=1.0)
-            self.drive(speed, steering)
+            self.steer_robot(pixel_error=pixel_error, speed=speed)
 
         self.servo.soft_reset()
 
@@ -441,7 +457,7 @@ class Robot(object):
     def avoid_obstacle(self, target_id, speed=0.1):
         print('target_id', target_id)
         self.servo.set_angle(0)
-        time.sleep(3)
+        time.sleep(1)
         end_t = time.ticks_ms() + 3000
 
         while time.ticks_ms() < end_t:
@@ -452,7 +468,8 @@ class Robot(object):
                 print("moving")
                 pixel_error = target_blob.cx() - self.cam.w_centre
                 steering = self.PID_steering.get_pid(pixel_error/sensor.width(), scaler=1.0)
-                self.drive(speed, steering)
+                self.drive(speed, steering*1.2) # warmed up robot
+                print('this steering', steering, steering*1.2) # warmed up robot
 
             else:
                 print('oh shit')
@@ -479,6 +496,7 @@ class Robot(object):
 
         print("\nI am good to go. Starting now!")
 
+        count = 0
         while True:
             mid_blob = self.get_snap(self.mid_line_id) # get biggest blob of the mid color
             obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000)
@@ -504,16 +522,20 @@ class Robot(object):
                     mid_blob = self.scan_for_blob(0, limit=30, step=2)
 
                     if mid_blob:
+                        count = 0
                         print("Found the blob. Trying again")
                         pixel_error = mid_blob.cx() - self.cam.w_centre
                         steering = self.PID_steering.get_pid(pixel_error/sensor.width(), scaler=1.0)
-                        self.drive(speed, steering)
+                        print('steering', steering, steering*1.2)
+                        self.drive(speed, steering*1.2)
                         self.servo.set_angle(0)
                         continue
 
                     else:
                         print("\n I did it. Hooray! - No non")
-                        break
+                        count += 1
+                        if count > 3:
+                            break
 
 
                     print('\nFinal real distance (cm)', real_distance, 'Final pan angle', self.servo.pan_pos)
@@ -528,13 +550,29 @@ class Robot(object):
                 self.drive(speed, steering)
 
             else: # Cannot find any blob
-                if found_mid: # But found middle blob before, then end the function - we're done
-                    print("\n I did it. Hooray! - This one")
-                    self.drive(0, 0)
-                    break
+                # if found_mid: # But found middle blob before, then end the function - we're done
+                #     print("\n I did it. Hooray! - This one")
+                #     self.drive(0, 0)
+                #     break
 
-                else: # Look for the blob
-                    print("yoohoo, dont see anything")
+                # else: # Look for the blob
+                #     print("yoohoo, dont see anything")
+                print("Did i lose it?")
+                mid_blob = self.scan_for_blob(0, limit=30, step=2)
+
+                if mid_blob:
+                    count = 0
+                    print("Found the blob. Trying again")
+                    pixel_error = mid_blob.cx() - self.cam.w_centre
+                    steering = self.PID_steering.get_pid(pixel_error/sensor.width(), scaler=1.0)
+                    print('steering', steering, steering*1.2)
+                    self.drive(speed, steering*1.2)
+                    self.servo.set_angle(0)
+                    continue
+
+                else:
+                    print("\n I did it. Hooray! - This ish ish please")
+                    break
 
         self.servo.set_speed(0,0)
         return
@@ -687,15 +725,20 @@ class Robot(object):
                     time.sleep(1)
 
     def debug_tracking(self, colour_code):
-        blob = self.get_snap(colour_code)
-        pan_angle = self.track_blob(blob)
 
-        self.servo.set_speed(0.1,-0.1) # turns right
-        time.sleep(0.04)
+        while True:
+            blob = self.get_snap(colour_code)
 
-        self.servo.set_speed(0, 0)
+            if blob is None:
+                print('oh oh')
+                self.drive(0, 0)
+                continue
 
-        print(pan_angle)
+            pan_angle = self.track_blob(blob)
+            self.drive(0.1, pan_angle*-1/60)
+            print(pan_angle*-1/60)
+
+        print('done')
 
 
     def reset(self) -> None:

@@ -168,7 +168,7 @@ class Servo:
         Method to reset the servos to default and print a delay prompt.
         """
         # Reset all servo shield pins
-        for i in range(0, 7, 1):
+        for i in range(0, 8, 1):
             self.pca9685.duty(i, 0)
 
         # Reset pan to centre
