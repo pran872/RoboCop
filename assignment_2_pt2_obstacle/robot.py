@@ -429,21 +429,25 @@ class Robot(object):
                     print(stop_angle)
 
                     while True:
+
                         if abs(pan_angle) > abs(stop_angle):
-                            print('\nPan angle threshold achieved. Breaking')
+                            print('\nPan angle threshold achieved.')
                             break
                         else:
-                            rel_error = abs(obstacle_blob.cx() - (sensor.width() / 2)) / sensor.width()
-                            move_duration_seconds = 0.4 * rel_error
-                            print("move dur", move_duration_seconds)
+
+                            obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000)
+                            while obstacle_blob is None:
+                                print("can't find obstacle")
+                                obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000)
+
                             if stop_angle < 0: #-ve stop angle
                                 self.servo.set_speed(0.1,-0.1) # turns right
-                                # time.sleep(0.04)
-                                time.sleep(max(move_duration_seconds, 0.01))
+                                time.sleep(0.1)
                             else: #+ve stop angle
                                 self.servo.set_speed(-0.1,0.1) # turns left
-                                # time.sleep(0.04)
-                                time.sleep(max(move_duration_seconds, 0.01))
+                                time.sleep(0.07)
+
+
                             self.servo.set_speed(0, 0)
 
                             time.sleep(0.1)
@@ -454,6 +458,7 @@ class Robot(object):
                             obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000)
 
                         pan_angle = self.track_blob(obstacle_blob, pan=True)
+                        time.sleep(0.1)
 
                     print('\nFinal real distance (cm)', real_distance, 'Final pan angle', self.servo.pan_pos)
                     print("I did it hooray!")
