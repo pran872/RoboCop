@@ -142,6 +142,64 @@ class Robot(object):
         return
 
 
+    def stage2_continue(self, speed=0.1) -> None:
+        """
+        Obstacle detection algorithm. Immediately stops when an obstacle is visible. Will continue if removed
+        Only uses the middle line.
+
+        Args:
+            speed (float): Speed to set the servos to (-1~1).
+        """
+
+        self.servo.set_angle(0)
+        print("\nI am good to go. Starting now!")
+
+        while True:
+            mid_blob = self.get_snap(self.mid_line_id) # get biggest blob of the mid color
+            obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000) # get biggest obstacle blob min size 2000
+
+            if obstacle_blob:
+                print("\nOh oh there's an obstacle. I'm stopping.")
+                self.drive(0,0)
+
+                for i in range(5):
+                    print(i)
+                    obstacle_blob = self.get_snap(self.obstacle_id, pix_thresh=2000) # get biggest obstacle blob min size 2000
+                    time.sleep(1)
+
+                if obstacle_blob:
+                    print('obstacle present for 5s, breaking')
+                    self.track_blob(obstacle_blob)  # keep track of obstacle
+                    break
+
+            if mid_blob: # Found the middle blob - then move to it
+                print("\nI found the mid blob! Yay")
+                pan_angle = self.track_blob(mid_blob)
+                self.drive(speed, pan_angle*-1/60)
+                print("Found the blob. Trying again")
+
+            elif not obstacle_blob: # Cannot find any blob
+
+                self.drive(0, 0)
+                mid_blob = self.scan_for_blob(0, limit=30, step=2)
+
+                if mid_blob:
+                    pan_angle = self.track_blob(mid_blob)
+                    self.drive(speed, pan_angle*-1/60)
+                    print("Found the blob. Trying again")
+                    continue
+
+                else:
+                    print("\n I did it. Hooray!")
+                    break
+
+        print(f"You are at {self.servo.pan_pos} pos")
+        time.sleep(5)
+        print("\nOkay, I will let you go")
+        self.servo.soft_reset()
+        return
+
+
     def stage3(self, speed=0.1, stop_cm=10) -> None:
         """
         Obstacle distance algorithm. Follows the middle lane until the robot is a specified distance
@@ -330,6 +388,7 @@ class Robot(object):
             sign_given (bool): If True, the stop_angle includes the sign else, the robot infers the direction
                             to pan from the obstacle position
         """
+        print("I am running stage 5")
         stop_cm += 5
         pix_to_cm = lambda x: 0.000101*x**2 + -0.100282*x + 34.739524  # curve 3
 
@@ -356,11 +415,7 @@ class Robot(object):
                     self.watch_obstacle_and_turn(pan_angle, stop_angle)
                     print("This determines left or right", pan_angle)
                     self.avoid_obstacle(self.l_line_id if pan_angle > 0 else self.r_line_id, speed)
-
-                    # mid_blob = self.scan_for_blob(0, limit=30, step=2)
-
-                    # if mid_blob:
-                    #     self.track_and_steer(mid_blob, speed)
+                    print("Avoided the obstacle")
 
 
             if mid_blob: # Found the middle blob - now move to it
