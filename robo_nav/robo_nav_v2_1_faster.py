@@ -143,16 +143,7 @@ class Robot(object):
                 target_blob = self.get_snap(code_id, pix_thresh=pix_thresh)
 
                 if target_blob:
-                    final_pan_angle = self.servo.pan_pos + (self.scan_direction * 6)
-
-                    target_blob = self.get_snap(code_id, pix_thresh=pix_thresh)
-                    print("pan_angleee", angle, final_pan_angle)
                     print("Scanned and found", target_blob)
-                    if target_blob is None:
-                        print("Changing final angle lost blob", angle)
-                        self.set_angle(angle)
-                        target_blob = self.get_snap(code_id, pix_thresh=pix_thresh)
-                        print("target_blob", target_blob)
 
                     return target_blob
 
