@@ -3,6 +3,7 @@ from camera import *
 from pid_control import PID
 import time
 from machine import LED
+import random
 
 class Robot(object):
     """
@@ -34,7 +35,7 @@ class Robot(object):
         self.obstacle_id = 2
         self.end_id = 4
 
-        self.scan_direction = 1
+        self.scan_direction = -1
         self.thresholds = thresholds
 
 
@@ -222,15 +223,15 @@ class Robot(object):
                     time.sleep(0.05)
 
                 self.servo.set_speed(0, 0)
-                time.sleep(0.1)
+                # time.sleep(0.05)
 
             target_blob = self.get_snap(target_id, closest=True, pix_thresh=pix_thresh, rot_angle=True)
             while not target_blob:
                 print("doesnt exist. turning")
-                if self.servo.pan_pos < 0:
-                    self.servo.set_angle(self.servo.pan_pos+10) # turn pan angle right
+                if self.servo.pan_pos < -10:
+                    self.servo.set_angle(self.servo.pan_pos+5) # turn pan angle right
                 else:
-                    self.servo.set_angle(self.servo.pan_pos-10) # turn pan angle left
+                    self.servo.set_angle(self.servo.pan_pos-5) # turn pan angle left
 
                 target_blob = self.get_snap(target_id, closest=True, pix_thresh=pix_thresh, rot_angle=True)
 
@@ -240,60 +241,35 @@ class Robot(object):
         self.drive(0, 0)
 
 
-    def watch_and_turn(self, target_id, global_direction, speed=0.1):
-        obstacle_blob = self.get_snap(self.obstacle_id, closest=True, pix_thresh=2000)
-        target_blob = self.get_snap(target_id, closest=True)
-        turn_dir = [1, -1]
-        check_angle = 85 * turn_dir[-1]
-        full_sweeps = 0
+    def body_search(self):
+        turn_bias = random.choice([-1, 1])
+        turn_bias = [turn_bias, turn_bias*-1]
 
-        if obstacle_blob:
-            count_360 = 0
-            while target_blob is None and count_360 < 50: # requires about 50 turn count_360s to be back in its original position
-                print("Using obstacle as pivot")
-                self.servo.set_speed(0.1*turn_dir[0], 0.1*turn_dir[-1]) # turn body
-                time.sleep(0.07)
-                self.servo.set_speed(0, 0)
-                time.sleep(0.2)
-                count_360 += 1
+        for i in range(20):
+            self.servo.set_speed(0.1*turn_bias[0], 0.1*turn_bias[1])
+            time.sleep(0.05)
+            self.servo.set_speed(0, 0)
 
-                obstacle_blob = self.get_snap(self.obstacle_id, closest=True, pix_thresh=2000)
+            end_blob = self.get_snap(self.end_id, pix_thresh=60)
+            square_blob = self.get_snap(self.square_id, pix_thresh=2000)
+            if end_blob or square_blob:
+                print("Found in first turn")
+                return
 
-                while not obstacle_blob and self.servo.pan_pos > -90 and self.servo.pan_pos < 90:
-                    print("lost it in watch and turn - turning back", self.servo.pan_pos)
-                    self.servo.set_angle(self.servo.pan_pos+(10*turn_dir[-1]))
-                    if obstacle_blob:
-                        obstacle_blob = self.get_snap(self.obstacle_id, closest=True, pix_thresh=2000)
+        for i in range(40):
+            self.servo.set_speed(0.1*turn_bias[1], 0.1*turn_bias[0])
+            time.sleep(0.05)
+            self.servo.set_speed(0, 0)
 
-                pan_angle = self.track_blob(obstacle_blob)
-
-                if abs(pan_angle) > abs(check_angle):
-                    print("checking angle", check_angle)
-                    self.servo.set_angle(0)
-                    time.sleep(1)
-                    print("in here pan angle", pan_angle)
-
-                    for i in range(5):
-                        target_blob = self.get_snap(target_id, closest=True)
-                        if target_blob:
-                            print("found it here in watch")
-                            return self.pan_to_global(-pan_angle, global_direction)
-
-                    self.servo.set_angle(pan_angle) # set pan back to before
-
-                    full_sweeps += 1
-                    if full_sweeps > 1:
-                        print('did twice and didnt find anything')
-                        return None
-
-                    self.align_body_and_eyes(self.obstacle_id)
-                    print("done aligning")
-                    turn_dir = [turn_dir[-1], turn_dir[0]]
-                    check_angle = 85 * turn_dir[-1]
+            end_blob = self.get_snap(self.end_id, pix_thresh=60)
+            square_blob = self.get_snap(self.square_id, pix_thresh=2000)
+            if end_blob or square_blob:
+                print("Found in second turn")
+                return
 
 
 
-    def go_robot(self, speed=0.1, stop_cm=10):
+    def go_robot(self, speed=0.2, stop_cm=10):
 
         time.sleep(1)
         global_direction = 0
@@ -341,7 +317,7 @@ class Robot(object):
             else: # Cannot find any blob
                 print("\nCannot find mid blob")
                 self.drive(0, 0)
-                self.mf()
+                self.mf(0.7)
 
                 for i in range(5):
                     print("Prelim search", i)
@@ -362,16 +338,8 @@ class Robot(object):
                     else: # no blob even after searching
 
                         self.servo.set_angle(0)
-                        self.mb()
-
-                        # if blob_no == 5: # reached the end of the map
-                        #     if global_direction < 45 or global_direction > 315: # facing forwards
-                        #         self.body_search(self.end_id, speed)
-                        global_direction = self.watch_and_turn(self.square_id, global_direction, speed)
-                        if global_direction is None:
-                            print("I failed")
-                            break
-
+                        print("doing body_search")
+                        self.body_search()
 
         self.drive(0, 0)
         # self.servo.soft_reset()
@@ -387,13 +355,13 @@ if __name__ == "__main__":
         # (17, 25, -9, 7, -26, -12), # blue square
         # (18, 36, 28, 47, 9, 38), # obstacle
 
-        # Aronnys's bedroom floor - gain 25
-        (15, 38, -16, 13, -30, -6), #blue
+        # Aronnys's bedroom floor - gain 20
+        (7, 15, -14, 10, -24, -6), # blue
         (0, 0, 0, 0, 0, 0),
-        (0, 0, 0, 0, 0, 0)
+        (31, 62, -54, -20, 8, 50), # green
     ]
 
 
-    robot = Robot(thresholds, gain = 27, p_steer=1.1, d_steer=0.005, p=0.8, i=0, d=0.005, imax=0.0)
+    robot = Robot(thresholds, gain = 20, p_steer=1.1, d_steer=0.005, p=0.8, i=0, d=0.005, imax=0.0)
 
     robot.go_robot(speed=0.1)
