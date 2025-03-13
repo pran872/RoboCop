@@ -109,17 +109,7 @@ class Robot(object):
 
 
     def quick_scan_for_blob(self, targets_list: list):
-        print("in quick scan")
         dir_bias = random.choice([1, -1])
-        # if global_dir < 135 and global_dir > 45:
-        #     print("Left scanning bias")
-        #     dir_bias = -1
-        # elif global_dir > 225 and global_dir < 315:
-        #     print("Right scanning bias")
-        #     dir_bias = 1
-        # else: # at global dirs 135-225, 315-360, 0-45
-        #     print("Random scanning bias")
-        #     dir_bias = random.choice([1, -1])
 
         # angles = [self.scan_direction*i for i in [30, 40, 50, 60, 70, 80, 90]]
         angles = [dir_bias*i for i in [10, 20, 30, 40, 50, 60, 70, 80, 90]]
